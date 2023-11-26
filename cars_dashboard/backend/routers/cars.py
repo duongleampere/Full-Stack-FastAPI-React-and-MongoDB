@@ -56,3 +56,41 @@ async def delete_task(id: str, request: Request):
     if delete_result.delete_count == 1:
         return JSONResponse(status_code=status.HTTP_204_NO_CONTENT)
     raise HTTPException(status_code=404, detail=f"Car with {id} not found")
+
+# optional
+@router.get("/brand/{brand}", response_description="Get brand overview")
+async def brand_price(brand: str,request: Request):
+
+    query = [
+        {
+            '$match': {
+                'brand': brand
+            }
+        }, {
+            '$project': {
+                '_id': 0,
+                'price': 1,
+                'year': 1,
+                'make': 1
+            }
+        }, {
+            '$group': {
+                '_id': {
+                    'model': '$make'
+                },
+                'avgPrice': {
+                    '$avg': '$price'
+                }
+            },
+        }, {
+            '$sort': {
+                'avgPrice':1
+            }
+        }
+    ]
+
+    full_query = request.app.mongodb['cars1'].aggregate(query)
+
+    results = [el async for el in full_query]
+
+    return results
